@@ -13,12 +13,17 @@ return new class extends Migration
     {
         Schema::create('students', function (Blueprint $table) {
             $table->id();
-            $table->string('student_id_number');
-            $table->foreignId('section_id');
+            $table->string('student_code')->unique();
+            $table->foreignId('section_id')->constrained()->onDelete('cascade');
             $table->string('first_name');
             $table->string('last_name');
+            $table->string('middle_name')->nullable();
             $table->string('gender');
-            
+            $table->date('birthdate');
+            $table->string('gurdian_name');
+            $table->string('gurdian_contact');
+            $table->string('address');
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });
     }

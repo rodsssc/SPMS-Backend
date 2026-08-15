@@ -9,4 +9,23 @@ class Student extends Model
 {
     /** @use HasFactory<\Database\Factories\StudentFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'student_code',
+        'section_id',
+        'first_name',
+        'last_name',
+        'middle_name',
+        'gender',
+        'birthdate',
+        'gurdian_name',
+        'gurdian_contact',
+        'address',
+        'status'
+    ];
+
+    public function section()
+    {
+        return $this->belongsTo(Section::class, 'section_id');
+    }
 }

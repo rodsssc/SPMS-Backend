@@ -46,4 +46,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function sections()
+    {
+        return $this->hasMany(Section::class, 'adviser_id');
+    }
 }
