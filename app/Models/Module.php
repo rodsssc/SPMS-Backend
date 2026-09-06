@@ -5,30 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-
-class Section extends Model
+class Module extends Model
 {
-    /** @use HasFactory<\Database\Factories\SectionFactory> */
+    /** @use HasFactory<\Database\Factories\ModuleFactory> */
     use HasFactory;
-
     protected $fillable = [
         'adviser_id',
-        'adviser_name',
+        'title',
         'year_level',
-        'section_name',
-        'school_year',
-        'status'
+        'description'
     ];
 
 
-    public function user()
+    public function adviser()
     {
         return $this->belongsTo(User::class, 'adviser_id');
     }
-
-    public function students()
-{
-    return $this->hasMany(Student::class);
-}
-    
 }

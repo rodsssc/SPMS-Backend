@@ -11,15 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sections', function (Blueprint $table) {
+        Schema::create('modules', function (Blueprint $table) {
             $table->id();
             $table->foreignId('adviser_id')->constrained('users')->onDelete('cascade');
-            $table->string('adviser_name');
+            $table->string('title');
             $table->string('year_level');
-            $table->string('section_name');
-            
-            $table->string('school_year');
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->string("description")->nullable();
             $table->timestamps();
         });
     }
@@ -29,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sections');
+        Schema::dropIfExists('modules');
     }
 };

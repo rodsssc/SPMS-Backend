@@ -5,22 +5,55 @@ namespace App\Http\Controllers\adviser;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Student;
-use App\Models\Section;
+use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
-    
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(
-            Student::with('section')->get()
-        );
+        $query = Student::with('section')->orderBy('created_at', 'desc');
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                ->orWhere('last_name', 'like', "%{$search}%")
+                ->orWhere('student_code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('section_id')) {
+            $query->where('section_id', $request->section_id);
+        }
+
+        $perPage = $request->input('per_page', 10);
+
+        return response()->json($query->paginate($perPage));
+    }
+
+    private function generateStudentCode(): string
+    {
+        // lockForUpdate() prevents two simultaneous requests
+        // from generating the same code
+        return DB::transaction(function () {
+            $last = Student::orderBy('id', 'desc')->lockForUpdate()->first();
+
+            $nextNumber = 1;
+            if ($last && preg_match('/(\d+)$/', $last->student_code, $matches)) {
+                $nextNumber = (int) $matches[1] + 1;
+            }
+
+            return 'STU-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        });
     }
 
     public function store(Request $request)
     {
         $validate = $request->validate([
-            'student_code' => 'required|string|max:255',
             'section_id' => 'required|exists:sections,id',
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -30,35 +63,53 @@ class StudentController extends Controller
             'gurdian_name' => 'required|string|max:255',
             'gurdian_contact' => 'required|string|max:20',
             'address' => 'required|string|max:255',
-            'status' => 'required|in:active,inactive'
+            'status' => 'required|in:active,inactive',
         ]);
 
-        Student::create($validate);
+        $validate['student_code'] = $this->generateStudentCode();
+
+        $student = Student::create($validate);
 
         return response()->json([
             'message' => 'Student created successfully',
-            'student' => $validate
+            'student' => $student->load('section'),
         ], 201);
-    }
-
-    public function fetchSection(){
-        
-        $sections = Section::all();
-        return response()->json($sections);
     }
 
     public function show($id)
     {
-        //
+        $student = Student::with('section')->findOrFail($id);
+        return response()->json($student);
     }
 
     public function update(Request $request, $id)
     {
-        //
+        $student = Student::findOrFail($id);
+
+        $validate = $request->validate([
+            'student_code' => 'sometimes|required|string|max:255',
+            'section_id' => 'sometimes|required|exists:sections,id',
+            'first_name' => 'sometimes|required|string|max:255',
+            'last_name' => 'sometimes|required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'gender' => 'sometimes|required|string|max:10',
+            'birthdate' => 'sometimes|required|date',
+            'gurdian_name' => 'sometimes|required|string|max:255',
+            'gurdian_contact' => 'sometimes|required|string|max:20',
+            'address' => 'sometimes|required|string|max:255',
+            'status' => 'sometimes|required|in:active,inactive',
+        ]);
+
+        $student->update($validate);
+
+        return response()->json($student->load('section'));
     }
 
     public function destroy($id)
     {
-        //
+        $student = Student::findOrFail($id);
+        $student->delete();
+
+        return response()->json(['message' => 'Student deleted successfully']);
     }
 }

@@ -51,4 +51,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(Section::class, 'adviser_id');
     }
+
+    public function module(){
+        return $this->hasMany(module::class, 'adviser_id');
+    }
 }
