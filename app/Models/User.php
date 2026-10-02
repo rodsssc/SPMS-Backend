@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -50,6 +51,11 @@ class User extends Authenticatable
     public function sections()
     {
         return $this->hasMany(Section::class, 'adviser_id');
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'superadmin';
     }
 
     public function module(){

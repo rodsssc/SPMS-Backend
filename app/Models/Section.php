@@ -30,5 +30,10 @@ class Section extends Model
 {
     return $this->hasMany(Student::class);
 }
+
+    public function modules()
+    {
+        return $this->belongsToMany(Module::class)->withTimestamps();
+    }
     
 }

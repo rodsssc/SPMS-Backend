@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\student;
 
 use App\Http\Controllers\Controller;
+use App\Models\Module;
 use App\Models\Student;
+use App\Models\StudentReadingScript;
 use Illuminate\Http\Request;
 
 class AuthController extends Controller
@@ -76,5 +78,36 @@ class AuthController extends Controller
         return response()->json([
             'student' => $student,
         ]);
+    }
+
+    public function modules(Request $request)
+    {
+        $studentId = $request->session()->get('student_id');
+        $student = Student::find($studentId);
+
+        if (!$student) {
+            return response()->json(['message' => 'Student not found.'], 404);
+        }
+
+        $statuses = StudentReadingScript::where('student_id', $student->id)
+            ->get()
+            ->keyBy('reading_script_id');
+
+        $modules = Module::with('readingScripts')
+            ->whereHas('sections', function ($query) use ($student) {
+                $query->where('sections.id', $student->section_id);
+            })
+            ->get()
+            ->map(function ($module) use ($statuses) {
+                $module->readingScripts->each(function ($script) use ($statuses) {
+                    $record = $statuses->get($script->id);
+                    $script->setAttribute('status', $record?->status ?? 'pending');
+                    $script->setAttribute('completed_at', $record?->completed_at);
+                });
+
+                return $module;
+            });
+
+        return response()->json(['modules' => $modules]);
     }
 }

@@ -28,4 +28,16 @@ class Student extends Model
     {
         return $this->belongsTo(Section::class, 'section_id');
     }
+
+    public function readingScripts()
+    {
+        return $this->belongsToMany(ReadingScript::class, 'student_reading_scripts')
+            ->withPivot('status', 'completed_at')
+            ->withTimestamps();
+    }
+
+    public function assessments()
+    {
+        return $this->hasMany(Assessment::class);
+    }
 }

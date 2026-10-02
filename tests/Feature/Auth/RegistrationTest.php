@@ -1,6 +1,6 @@
 <?php
 
-test('new users can register', function () {
+test('public registration is disabled so adviser accounts are onboarded by a super admin', function () {
     $response = $this->post('/register', [
         'name' => 'Test User',
         'email' => 'test@example.com',
@@ -8,6 +8,6 @@ test('new users can register', function () {
         'password_confirmation' => 'password',
     ]);
 
-    $this->assertAuthenticated();
-    $response->assertNoContent();
+    $this->assertGuest();
+    $response->assertNotFound();
 });

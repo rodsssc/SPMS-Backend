@@ -11,7 +11,41 @@ class StudentController extends Controller
 {
     public function index(Request $request)
     {
+        $request->validate([
+            'performance_level' => ['sometimes', 'in:all,highly_confident,confident,developing,needs_improvement'],
+        ]);
+
         $query = Student::with('section')->orderBy('created_at', 'desc');
+
+        $performanceBounds = match ($request->input('performance_level')) {
+            'highly_confident' => [90, 100],
+            'confident' => [75, 89],
+            'developing' => [50, 74],
+            'needs_improvement' => [0, 49],
+            default => null,
+        };
+
+        if ($performanceBounds) {
+            [$minimum, $maximum] = $performanceBounds;
+            $query->whereIn('students.id', function ($performanceQuery) use ($request, $minimum, $maximum) {
+                $performanceQuery->select('assessments.student_id')
+                    ->from('assessments')
+                    ->join('students as performance_students', 'performance_students.id', '=', 'assessments.student_id')
+                    ->join('sections as performance_sections', 'performance_sections.id', '=', 'performance_students.section_id')
+                    ->join('modules as performance_modules', 'performance_modules.id', '=', 'assessments.module_id')
+                    ->where('assessments.status', 'completed')
+                    ->where('performance_sections.adviser_id', $request->user()->id)
+                    ->where('performance_modules.adviser_id', $request->user()->id)
+                    ->whereExists(function ($moduleSectionQuery) {
+                        $moduleSectionQuery->selectRaw('1')
+                            ->from('module_section')
+                            ->whereColumn('module_section.module_id', 'assessments.module_id')
+                            ->whereColumn('module_section.section_id', 'performance_students.section_id');
+                    })
+                    ->groupBy('assessments.student_id')
+                    ->havingRaw('ROUND(AVG(assessments.accuracy)) BETWEEN ? AND ?', [$minimum, $maximum]);
+            });
+        }
 
         if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);

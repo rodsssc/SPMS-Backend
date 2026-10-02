@@ -21,4 +21,19 @@ class Module extends Model
     {
         return $this->belongsTo(User::class, 'adviser_id');
     }
+
+    public function readingScripts()
+    {
+        return $this->hasMany(ReadingScript::class);
+    }
+
+    public function sections()
+    {
+        return $this->belongsToMany(Section::class)->withTimestamps();
+    }
+
+    public function assessments()
+    {
+        return $this->hasMany(Assessment::class);
+    }
 }

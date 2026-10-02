@@ -76,6 +76,7 @@ class SectionController extends Controller
 
     public function show(Section $section)
     {
+        abort_unless($section->adviser_id === auth()->id(), 404);
         return response()->json($section);
     }
 

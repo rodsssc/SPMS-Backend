@@ -1,159 +1,80 @@
 <?php
 
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\adviser\AssessmentController as AdviserAssessmentController;
+use App\Http\Controllers\adviser\ModuleController;
+use App\Http\Controllers\adviser\ScriptController;
+use App\Http\Controllers\adviser\SectionController;
+use App\Http\Controllers\adviser\StudentController;
+use App\Http\Controllers\student\AssessmentController as StudentAssessmentController;
+use App\Http\Controllers\student\AuthController as StudentAuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\adviser\AuthController as AdviserAuthController;
-use App\Http\Controllers\adviser\SectionController;
-use App\Http\Controllers\adviser\StudentController;
-use App\Http\Controllers\adviser\ModuleController;
-
-use App\Http\Controllers\student\AuthController as StudentAuthController;
-
-
-/*
-|--------------------------------------------------------------------------
-| Adviser Authentication
-|--------------------------------------------------------------------------
-*/
-
-// Adviser Login
-Route::post('/login', [AdviserAuthController::class, 'login']);
-
-// Adviser Register
-Route::post('/register', [AdviserAuthController::class, 'register']);
-
-// Adviser Protected Routes
+Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 Route::middleware('auth:sanctum')->group(function () {
-
-    // Get authenticated adviser
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
-
-    // Adviser Logout
-    Route::post('/logout', [AdviserAuthController::class, 'logout']);
+    Route::get('/user', fn (Request $request) => $request->user()->makeHidden(['email_verified_at', 'created_at', 'updated_at']));
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 });
-
-
-/*
-|--------------------------------------------------------------------------
-| Student Authentication
-|--------------------------------------------------------------------------
-|
-| Students authenticate using student_code only.
-|
-*/
 
 Route::prefix('student')->group(function () {
-
-    // Student Login
     Route::post('/login', [StudentAuthController::class, 'login']);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Student Protected Routes
-    |--------------------------------------------------------------------------
-    |
-    | These will later use student.auth middleware.
-    |
-    */
-
     Route::middleware('student.auth')->group(function () {
-
-        // Get authenticated student
         Route::get('/user', [StudentAuthController::class, 'user']);
-
-        // Student Logout
+        Route::get('/modules', [StudentAuthController::class, 'modules']);
+        Route::get('/assessments', [StudentAssessmentController::class, 'index']);
+        Route::get('/assessments/{script}', [StudentAssessmentController::class, 'show']);
+        Route::post('/assessments/{script}/submit', [StudentAssessmentController::class, 'submit']);
+        Route::get('/assessments/{script}/audio', [StudentAssessmentController::class, 'audio']);
         Route::post('/logout', [StudentAuthController::class, 'logout']);
-
     });
-
 });
 
-
-/*
-|--------------------------------------------------------------------------
-| Adviser API
-|--------------------------------------------------------------------------
-|
-| All adviser management APIs require Sanctum authentication.
-|
-*/
-
-Route::middleware('auth:sanctum')
-    ->prefix('adviser')
-    ->group(function () {
-
-        /*
-        |--------------------------------------------------------------------------
-        | Sections
-        |--------------------------------------------------------------------------
-        */
-
-        Route::prefix('sections')->group(function () {
-
-            // Get all sections
-            Route::get('/', [SectionController::class, 'index']);
-
-            // Get students
-            Route::get('/students', [SectionController::class, 'display_student']);
-
-            // Create section
-            Route::post('/', [SectionController::class, 'store']);
-
-            // Get specific section
-            Route::get('/{section}', [SectionController::class, 'show']);
-
-            // Update section
-            Route::put('/{section}', [SectionController::class, 'update']);
-
-            // Delete section
-            Route::delete('/{section}', [SectionController::class, 'destroy']);
-
-        });
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Students
-        |--------------------------------------------------------------------------
-        */
-
-        Route::prefix('students')->group(function () {
-
-            // Get all students
-            Route::get('/', [StudentController::class, 'index']);
-
-            // Create student
-            Route::post('/', [StudentController::class, 'store']);
-
-            // Get specific student
-            Route::get('/{student}', [StudentController::class, 'show']);
-
-            // Update student
-            Route::put('/{student}', [StudentController::class, 'update']);
-
-            // Delete student
-            Route::delete('/{student}', [StudentController::class, 'destroy']);
-
-        });
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Modules
-        |--------------------------------------------------------------------------
-        */
-
-        Route::prefix('module')->group(function () {
-
-            // Get all modules
-            Route::get('/', [ModuleController::class, 'index']);
-
-            // Create module
-            Route::post('/', [ModuleController::class, 'store']);
-
-        });
-
+Route::middleware(['auth:sanctum', 'role:adviser'])->prefix('adviser')->group(function () {
+    Route::get('/sections', [SectionController::class, 'index']);
+    Route::get('/sections/students', [SectionController::class, 'display_student']);
+    Route::get('/sections/{section}', [SectionController::class, 'show']);
+    Route::get('/students', [StudentController::class, 'index']);
+    Route::get('/students/{student}', [StudentController::class, 'show']);
+    Route::prefix('module')->group(function () {
+        Route::get('/', [ModuleController::class, 'index']);
+        Route::post('/', [ModuleController::class, 'store']);
+        Route::post('/{module}/sections', [ModuleController::class, 'assignSections']);
+        Route::get('/{module}/students', [ModuleController::class, 'students']);
     });
+    Route::prefix('scripts')->group(function () {
+        Route::get('/', [ScriptController::class, 'index']);
+        Route::post('/', [ScriptController::class, 'store']);
+        Route::get('/{script}', [ScriptController::class, 'show']);
+        Route::put('/{script}', [ScriptController::class, 'update']);
+        Route::delete('/{script}', [ScriptController::class, 'destroy']);
+        Route::put('/{script}/students/{student}', [ScriptController::class, 'updateStudentStatus']);
+    });
+    Route::get('/assessments', [AdviserAssessmentController::class, 'index']);
+    Route::get('/assessments/{assessment}', [AdviserAssessmentController::class, 'show']);
+    Route::get('/assessments/{assessment}/audio', [AdviserAssessmentController::class, 'audio']);
+});
+
+// Keep legacy management URLs behind the same Super Admin check so advisers
+// receive a standard 403 rather than relying on missing UI controls.
+Route::middleware(['auth:sanctum', 'role:superadmin'])->prefix('adviser')->group(function () {
+    Route::post('/students', [SuperAdminController::class, 'storeStudent']);
+    Route::put('/students/{student}', [SuperAdminController::class, 'updateStudent']);
+    Route::post('/sections', [SuperAdminController::class, 'storeSection']);
+    Route::put('/sections/{section}', [SuperAdminController::class, 'updateSection']);
+});
+
+Route::middleware(['auth:sanctum', 'role:superadmin'])->prefix('superadmin')->group(function () {
+    Route::get('/dashboard', [SuperAdminController::class, 'dashboard']);
+    Route::get('/advisers', [SuperAdminController::class, 'advisers']);
+    Route::post('/advisers', [SuperAdminController::class, 'storeAdviser']);
+    Route::put('/advisers/{user}', [SuperAdminController::class, 'updateAdviser']);
+    Route::get('/students', [SuperAdminController::class, 'students']);
+    Route::post('/students', [SuperAdminController::class, 'storeStudent']);
+    Route::put('/students/{student}', [SuperAdminController::class, 'updateStudent']);
+    Route::get('/sections', [SuperAdminController::class, 'sections']);
+    Route::post('/sections', [SuperAdminController::class, 'storeSection']);
+    Route::put('/sections/{section}', [SuperAdminController::class, 'updateSection']);
+    Route::put('/sections/{section}/adviser', [SuperAdminController::class, 'assignAdviser']);
+});

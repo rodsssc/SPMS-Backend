@@ -9,6 +9,14 @@
 
 ## About Laravel
 
+## SPMS database setup
+
+Run `php artisan migrate --seed` from a fresh database. The seeder creates the
+Super Admin account `admin@spms.local`; its password is read from
+`SUPERADMIN_PASSWORD` (defaults to `password` for local development). Set a
+unique value before seeding a deployed environment. Adviser accounts are
+onboarded from the Super Admin panel at `/superadmin/dashboard`.
+
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
 - [Simple, fast routing engine](https://laravel.com/docs/routing).
