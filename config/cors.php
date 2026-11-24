@@ -22,7 +22,7 @@ return [
     'allowed_origins' => [],
 
     'allowed_origins_patterns' => [
-        '#^http://(?:localhost|127\.0\.0\.1|192\.168\.100\.202):5173$#',
+        '#^https?://(?:localhost|127\.0\.0\.1|10\.105\.234\.201):5173$#',
     ],
 
     'allowed_headers' => ['*'],

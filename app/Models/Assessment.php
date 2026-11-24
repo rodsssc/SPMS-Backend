@@ -9,6 +9,7 @@ class Assessment extends Model
     protected $fillable = [
         'student_id','reading_script_id', 'module_id', 'script', 'transcription',
         'accuracy', 'total_words', 'correct_words', 'incorrect_words', 'audio_path', 'status',
+        'fluency_rating', 'review_note', 'reviewed_by', 'reviewed_at',
     ];
 
     public function student()

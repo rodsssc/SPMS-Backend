@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Student;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class StudentController extends Controller
 {
@@ -15,7 +16,9 @@ class StudentController extends Controller
             'performance_level' => ['sometimes', 'in:all,highly_confident,confident,developing,needs_improvement'],
         ]);
 
-        $query = Student::with('section')->orderBy('created_at', 'desc');
+        $query = Student::with('section')
+            ->whereHas('section', fn ($section) => $section->where('adviser_id', $request->user()->id))
+            ->orderBy('created_at', 'desc');
 
         $performanceBounds = match ($request->input('performance_level')) {
             'highly_confident' => [90, 100],
@@ -88,7 +91,7 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $validate = $request->validate([
-            'section_id' => 'required|exists:sections,id',
+            'section_id' => ['required', Rule::exists('sections', 'id')->where('adviser_id', $request->user()->id)],
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',

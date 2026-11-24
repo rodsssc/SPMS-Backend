@@ -153,6 +153,18 @@ class SuperAdminController extends Controller
         return response()->json(['section' => $section->fresh('user:id,name,email')]);
     }
 
+    public function deleteSection(Section $section)
+    {
+        if ($section->students()->exists()) {
+            return response()->json([
+                'message' => 'This section still has students. Move or remove them before deleting the section.',
+            ], 422);
+        }
+
+        $section->delete();
+        return response()->json(['message' => 'Section deleted.']);
+    }
+
     public function assignAdviser(Request $request, Section $section)
     {
         $data = $request->validate(['adviser_id' => ['nullable', 'exists:users,id']]);

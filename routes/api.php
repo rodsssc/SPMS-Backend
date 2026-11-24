@@ -36,6 +36,7 @@ Route::middleware(['auth:sanctum', 'role:adviser'])->prefix('adviser')->group(fu
     Route::get('/sections/students', [SectionController::class, 'display_student']);
     Route::get('/sections/{section}', [SectionController::class, 'show']);
     Route::get('/students', [StudentController::class, 'index']);
+    Route::post('/students', [StudentController::class, 'store']);
     Route::get('/students/{student}', [StudentController::class, 'show']);
     Route::prefix('module')->group(function () {
         Route::get('/', [ModuleController::class, 'index']);
@@ -53,13 +54,13 @@ Route::middleware(['auth:sanctum', 'role:adviser'])->prefix('adviser')->group(fu
     });
     Route::get('/assessments', [AdviserAssessmentController::class, 'index']);
     Route::get('/assessments/{assessment}', [AdviserAssessmentController::class, 'show']);
+    Route::put('/assessments/{assessment}/review', [AdviserAssessmentController::class, 'review']);
     Route::get('/assessments/{assessment}/audio', [AdviserAssessmentController::class, 'audio']);
 });
 
 // Keep legacy management URLs behind the same Super Admin check so advisers
 // receive a standard 403 rather than relying on missing UI controls.
 Route::middleware(['auth:sanctum', 'role:superadmin'])->prefix('adviser')->group(function () {
-    Route::post('/students', [SuperAdminController::class, 'storeStudent']);
     Route::put('/students/{student}', [SuperAdminController::class, 'updateStudent']);
     Route::post('/sections', [SuperAdminController::class, 'storeSection']);
     Route::put('/sections/{section}', [SuperAdminController::class, 'updateSection']);
@@ -76,5 +77,6 @@ Route::middleware(['auth:sanctum', 'role:superadmin'])->prefix('superadmin')->gr
     Route::get('/sections', [SuperAdminController::class, 'sections']);
     Route::post('/sections', [SuperAdminController::class, 'storeSection']);
     Route::put('/sections/{section}', [SuperAdminController::class, 'updateSection']);
+    Route::delete('/sections/{section}', [SuperAdminController::class, 'deleteSection']);
     Route::put('/sections/{section}/adviser', [SuperAdminController::class, 'assignAdviser']);
 });

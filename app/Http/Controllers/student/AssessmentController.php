@@ -85,7 +85,7 @@ class AssessmentController extends Controller
         }
 
         try {
-            $transcription = $speech->transcribe($request->file('audio'));
+            $transcription = $speech->transcribe($request->file('audio'), $script->content);
             $score = $this->score($script->content, $transcription);
             $audioPath = $request->file('audio')->store('assessments', 'local');
 

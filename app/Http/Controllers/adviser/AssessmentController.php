@@ -30,6 +30,24 @@ class AssessmentController extends Controller
         return response()->json(['assessment' => $this->payload($assessment, true)]);
     }
 
+    public function review(Request $request, Assessment $assessment)
+    {
+        abort_unless($this->isAccessibleTo($assessment, $request), 404);
+
+        $data = $request->validate([
+            'fluency_rating' => ['nullable', 'in:fluent,developing,needs_support'],
+            'review_note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $assessment->update([
+            ...$data,
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now(),
+        ]);
+
+        return response()->json(['assessment' => $this->payload($assessment->fresh()->load(['student.section', 'module', 'readingScript']), true)]);
+    }
+
     public function audio(Request $request, Assessment $assessment)
     {
         abort_unless($this->isAccessibleTo($assessment, $request), 404);
@@ -58,6 +76,9 @@ class AssessmentController extends Controller
             'incorrect_words' => $assessment->incorrect_words,
             'total_words' => $assessment->total_words,
             'status' => $assessment->status,
+            'fluency_rating' => $assessment->fluency_rating,
+            'review_note' => $assessment->review_note,
+            'reviewed_at' => $assessment->reviewed_at,
             'created_at' => $assessment->created_at,
         ];
 
